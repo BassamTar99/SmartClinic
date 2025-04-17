@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import AuthContext from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { handleApiError } from './utils/apiErrorHandler';
 import ErrorBoundary from './components/ErrorBoundary';
+import Header from './components/Header';
 
 // Import pages
 import LandingPage from './pages/LandingPage';
@@ -158,36 +159,41 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthContext.Provider value={{ user, login, logout, error, setError }}>
+      <AuthProvider>
         <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/about" element={<AboutUsPage />} />
-            <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/dashboard" />} />
+          <div className="min-h-screen bg-gray-50">
+            <Header />
+            <main className="container mx-auto px-4 py-8">
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/about" element={<AboutUsPage />} />
+                <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/dashboard" />} />
 
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
-              user ? <DashboardPage /> : <Navigate to="/auth" />
-            } />
-            <Route path="/appointments" element={
-              user ? <AppointmentConfirmation /> : <Navigate to="/auth" />
-            } />
-            <Route path="/reminders" element={
-              user ? <ReminderTimelinePage /> : <Navigate to="/auth" />
-            } />
-            <Route path="/smart-scheduling" element={
-              user ? <SmartSchedulingPage /> : <Navigate to="/auth" />
-            } />
-            <Route path="/reservation" element={
-              user ? <ReservationPage /> : <Navigate to="/auth" />
-            } />
+                {/* Protected routes */}
+                <Route path="/dashboard" element={
+                  user ? <DashboardPage /> : <Navigate to="/auth" />
+                } />
+                <Route path="/appointments" element={
+                  user ? <AppointmentConfirmation /> : <Navigate to="/auth" />
+                } />
+                <Route path="/reminders" element={
+                  user ? <ReminderTimelinePage /> : <Navigate to="/auth" />
+                } />
+                <Route path="/smart-scheduling" element={
+                  user ? <SmartSchedulingPage /> : <Navigate to="/auth" />
+                } />
+                <Route path="/reservation" element={
+                  user ? <ReservationPage /> : <Navigate to="/auth" />
+                } />
 
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </main>
+          </div>
         </Router>
-      </AuthContext.Provider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

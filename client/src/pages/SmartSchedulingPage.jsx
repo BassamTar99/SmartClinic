@@ -1,11 +1,12 @@
 // React + Tailwind: Smart Scheduling Page
+import React from 'react';
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import AuthContext from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext';
 
 export default function SmartSchedulingPage() {
-  const { user } = useContext(AuthContext);
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     availability: "",
@@ -18,6 +19,10 @@ export default function SmartSchedulingPage() {
   const [error, setError] = useState("");
   const [matchedDoctors, setMatchedDoctors] = useState([]);
   const [showResults, setShowResults] = useState(false);
+
+  if (!isAuthenticated) {
+    return <div>Please log in to schedule appointments</div>;
+  }
 
   const handleChange = (e) => {
     setFormData({

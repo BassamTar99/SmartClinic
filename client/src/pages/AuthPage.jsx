@@ -1,8 +1,8 @@
 // React + Tailwind: Sign In and Sign Up Page UI
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import AuthContext from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -14,7 +14,7 @@ export default function AuthPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {

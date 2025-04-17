@@ -1,14 +1,14 @@
 // React + Tailwind for Appointment Confirmation Page
 
-import { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AuthContext from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext';
 
 export default function AppointmentConfirmation() {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

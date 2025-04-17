@@ -1,11 +1,11 @@
 // React + Tailwind: SmartClinic Dashboard Page
-import { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import AuthContext from "../context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardPage() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, isAuthenticated, logout } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,6 +76,10 @@ export default function DashboardPage() {
       hour12: true
     });
   };
+
+  if (!isAuthenticated) {
+    return <div>Please log in to view the dashboard</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

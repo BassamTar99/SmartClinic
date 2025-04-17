@@ -1,12 +1,13 @@
 // React + Tailwind: Reminder History / Timeline Page
 
-import { useState, useEffect, useContext } from "react";
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import AuthContext from "../context/AuthContext";
 
 export default function ReminderTimelinePage() {
-  const { user } = useContext(AuthContext);
+  const { user, isAuthenticated } = useAuth();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,28 +15,27 @@ export default function ReminderTimelinePage() {
   useEffect(() => {
     const fetchReminders = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/notifications`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            },
-            params: {
-              userId: user._id
-            }
+        const response = await axios.get('/api/reminders', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        });
         setReminders(response.data);
+        setLoading(false);
       } catch (err) {
-        setError("Failed to fetch reminders");
-        console.error(err);
-      } finally {
+        setError(err.response?.data?.message || 'Failed to fetch reminders');
         setLoading(false);
       }
     };
 
-    fetchReminders();
-  }, [user]);
+    if (isAuthenticated) {
+      fetchReminders();
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return <div>Please log in to view reminders</div>;
+  }
 
   const handleNotificationClick = async (notificationId, appointmentId) => {
     try {

@@ -8,12 +8,11 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get(`${process.env.REACT_APP_API_URL}/auth/me`, {
+      axios.get('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(response => {
@@ -33,43 +32,42 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, { email, password });
+      const response = await axios.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-      setError(null);
       return { success: true };
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
-      return { success: false, message: error.response?.data?.message || 'Login failed' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Login failed' 
+      };
     }
   };
 
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, userData);
+      const response = await axios.post('/api/auth/register', userData);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-      setError(null);
       return { success: true };
     } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed');
-      return { success: false, message: error.response?.data?.message || 'Registration failed' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Registration failed' 
+      };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    setError(null);
   };
 
   const value = {
     user,
     loading,
-    error,
-    setError,
     login,
     register,
     logout,

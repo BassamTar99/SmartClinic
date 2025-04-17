@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: smartclinic-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartclinic-server
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/smart-clinic?authSource=admin
+      - JWT_SECRET=smart-clinic-secure-jwt-secret-2024
+      - CLIENT_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+volumes:
+  mongodb_data: 

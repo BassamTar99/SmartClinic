@@ -7,7 +7,12 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.CLIENT_URL 
+    : 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 
 // Log all requests
@@ -16,20 +21,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/build')));
-
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/admin', require('./routes/auth'));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build/index.html'));
-});
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  });
+}
 
 // Error handling
 app.use((err, req, res, next) => {
