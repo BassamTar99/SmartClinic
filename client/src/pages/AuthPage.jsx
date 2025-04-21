@@ -10,7 +10,8 @@ export default function AuthPage() {
     email: "",
     password: "",
     name: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    role: "patient"
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ export default function AuthPage() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          role: "patient" // Default role for new users
+          role: formData.role // Use the selected role
         });
         console.log("Registration response:", response.data);
         
@@ -141,15 +142,47 @@ export default function AuthPage() {
             required
           />
           {!isSignIn && (
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              className="w-full border border-gray-300 rounded p-2"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
+            <>
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                className="w-full border border-gray-300 rounded p-2"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  I am registering as a:
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="patient"
+                      checked={formData.role === "patient"}
+                      onChange={handleChange}
+                      className="mr-2"
+                    />
+                    Patient
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="doctor"
+                      checked={formData.role === "doctor"}
+                      onChange={handleChange}
+                      className="mr-2"
+                    />
+                    Doctor
+                  </label>
+                </div>
+              </div>
+            </>
           )}
 
           {isSignIn && (
@@ -183,7 +216,8 @@ export default function AuthPage() {
                 email: "",
                 password: "",
                 name: "",
-                confirmPassword: ""
+                confirmPassword: "",
+                role: "patient"
               });
             }}
             className="text-blue-500 ml-1 hover:underline"

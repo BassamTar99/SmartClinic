@@ -22,22 +22,16 @@ export default function Header() {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
-                to="/features"
+                to="/"
                 className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
-                Features
+                Home
               </Link>
               <Link
                 to="/about"
                 className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 About
-              </Link>
-              <Link
-                to="/contact"
-                className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Contact
               </Link>
               {isAuthenticated && (
                 <Link
@@ -47,6 +41,22 @@ export default function Header() {
                   Dashboard
                 </Link>
               )}
+              {isAuthenticated && user?.role === 'doctor' && (
+                <Link
+                  to="/doctor-schedule"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  My Schedule
+                </Link>
+              )}
+              {isAuthenticated && (
+                <Link
+                  to="/appointments"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  Appointments
+                </Link>
+              )}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -54,6 +64,7 @@ export default function Header() {
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">
                   {user?.name || user?.email}
+                  {user?.role && <span className="ml-1 text-xs text-gray-500">({user.role})</span>}
                 </span>
                 <button
                   onClick={handleLogout}
@@ -63,20 +74,12 @@ export default function Header() {
                 </button>
               </div>
             ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50"
-                >
-                  Register
-                </Link>
-              </>
+              <Link
+                to="/auth"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Sign In / Sign Up
+              </Link>
             )}
           </div>
         </div>

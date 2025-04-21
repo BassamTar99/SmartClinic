@@ -1,21 +1,22 @@
-const winston = require('winston');
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
-}
+// Simple logger utility for SmartClinic
+const logger = {
+  info: (message, ...args) => {
+    console.log(`INFO: ${message}`, ...args);
+  },
+  
+  warn: (message, ...args) => {
+    console.warn(`WARNING: ${message}`, ...args);
+  },
+  
+  error: (message, ...args) => {
+    console.error(`ERROR: ${message}`, ...args);
+  },
+  
+  debug: (message, ...args) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`DEBUG: ${message}`, ...args);
+    }
+  }
+};
 
 module.exports = logger; 

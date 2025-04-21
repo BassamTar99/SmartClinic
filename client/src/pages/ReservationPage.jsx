@@ -13,6 +13,10 @@ export default function ReservationPage() {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [doctors, setDoctors] = useState([]);
+  const [availableDoctors, setAvailableDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsError, setDoctorsError] = useState("");
 
   // Fetch available appointment times
   useEffect(() => {
@@ -34,6 +38,34 @@ export default function ReservationPage() {
       fetchAvailableTimes();
     }
   }, [selectedDate]);
+
+  // effect to fetch and filter available doctors when date and time are selected
+  useEffect(() => {
+    if (selectedDate && selectedTime) {
+      setDoctorsLoading(true);
+      setDoctorsError("");
+      axios.get(`${process.env.REACT_APP_API_URL}/doctors`)
+        .then(res => {
+          const weekday = new Date(`2024-04-${String(selectedDate).padStart(2,'0')}`)
+            .toLocaleDateString('en-US', { weekday: 'long' });
+          const filtered = res.data.filter(doc =>
+            doc.availability.some(slot =>
+              slot.day === weekday &&
+              slot.startTime <= selectedTime &&
+              slot.endTime >= selectedTime
+            )
+          );
+          setAvailableDoctors(filtered);
+        })
+        .catch(err => {
+          console.error(err);
+          setDoctorsError('Failed to fetch doctors');
+        })
+        .finally(() => setDoctorsLoading(false));
+    } else {
+      setAvailableDoctors([]);
+    }
+  }, [selectedDate, selectedTime]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,19 +106,6 @@ export default function ReservationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100 text-gray-800">
-      {/* Navbar */}
-      <header className="flex justify-between items-center px-8 py-4 bg-white shadow">
-        <div className="text-xl font-bold">
-          <img src="/logo.png" alt="SmartClinic Scheduler" className="h-10" />
-        </div>
-        <nav className="space-x-6 text-sm font-medium">
-          <a href="#" className="hover:underline">Community</a>
-          <a href="#" className="hover:underline">Resources</a>
-          <a href="#" className="hover:underline">Contact</a>
-          <button className="bg-black text-white px-4 py-1 rounded">Sign In</button>
-        </nav>
-      </header>
-
       {/* Notification */}
       {showNotification && (
         <div className="fixed top-6 right-6 bg-white border shadow-lg rounded-lg w-80 p-4 z-50 animate-fade-in">
@@ -109,8 +128,13 @@ export default function ReservationPage() {
         </div>
       )}
 
+      {/* Page Title */}
+      <div className="py-4 px-6">
+        <h1 className="text-2xl font-bold">Book an Appointment</h1>
+      </div>
+
       {/* Reservation Section */}
-      <main className="flex flex-col md:flex-row justify-center items-start px-4 py-10 gap-8 max-w-6xl mx-auto">
+      <main className="flex flex-col md:flex-row justify-center items-start px-4 py-4 gap-8 max-w-6xl mx-auto">
         {/* Left Panel */}
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/2">
           <h2 className="text-lg font-semibold mb-4">SmartClinic Inc.</h2>
@@ -199,38 +223,30 @@ export default function ReservationPage() {
           <p className="text-sm text-gray-600 mb-4">
             <span role="img" aria-label="globe">🌍</span> Central European Time
           </p>
-          <button className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-100">
-            Need Help?
-          </button>
+
+          {/* Available doctors at selected time */}
+          {selectedDate && selectedTime && (
+            <div className="mt-6 bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold mb-2">Available Doctors</h2>
+              {doctorsLoading ? (
+                <p>Loading doctors...</p>
+              ) : doctorsError ? (
+                <p className="text-red-500">{doctorsError}</p>
+              ) : availableDoctors.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1">
+                  {availableDoctors.map(doc => (
+                    <li key={doc._id}>
+                      Dr. {doc.user.name} - {doc.specialization}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No doctors available at this time.</p>
+              )}
+            </div>
+          )}
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white mt-10 py-10 px-8 text-sm text-gray-600">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-2">SmartClinic Scheduler®</h3>
-            <p>Efficient | Reliable | Patient-Centered<br/>Bringing AI-powered efficiency to healthcare scheduling.</p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Quick Links</h4>
-            <ul className="space-y-1">
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">How It Works</a></li>
-              <li><a href="#">FAQs</a></li>
-              <li><a href="#">Features</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms of Service</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Contact Us</h4>
-            <p>Email: support@smartclinic.com</p>
-            <p>Phone: +961 00000000</p>
-            <p>Location: Beirut, Hamra</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

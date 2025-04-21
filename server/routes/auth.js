@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // Register route
 router.post('/register', async (req, res) => {
@@ -18,15 +18,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create new user
+    // Create new user with plain password - the pre-save hook will hash it
     user = new User({
       name,
       email,
-      password: hashedPassword,
+      password,
       role: role || 'patient'
     });
 
@@ -144,7 +140,6 @@ router.get('/me', async (req, res) => {
 // Reset password route
 router.post('/reset-password', async (req, res) => {
   try {
-    console.log('Admin password reset request received:', req.body);
     const { email, newPassword } = req.body;
     logger.info(`Admin password reset for user: ${email}`);
 
@@ -165,7 +160,6 @@ router.post('/reset-password', async (req, res) => {
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
-    console.error('Password reset error:', error);
     logger.error('Password reset error:', error);
     res.status(500).json({ 
       message: 'Server error',
