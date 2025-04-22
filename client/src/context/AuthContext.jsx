@@ -40,7 +40,8 @@ export const AuthProvider = ({ children }) => {
       console.log('Login response:', response.data);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
-      console.log('Token stored in localStorage. User:', user);
+      localStorage.setItem('userId', user._id);
+      console.log('Token and userId stored in localStorage. User:', user);
       setUser(user);
       return { success: true, user };
     } catch (error) {
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Registration response:', response.data);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', user._id);
       setUser(user);
       return { success: true, user };
     } catch (error) {
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     console.log('Logging out - Clearing auth data');
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     setUser(null);
   };
 
@@ -90,4 +93,4 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};

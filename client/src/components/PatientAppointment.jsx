@@ -8,15 +8,21 @@ export default function PatientAppointment({ appointment, onCancelSuccess }) {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
+      weekday: 'long',
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   const formatTime = (timeString) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
+    if (!timeString) return '';
+    // Ensure time string has the HH:MM format
+    const [hours, minutes] = timeString.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
       hour12: true
     });
@@ -56,6 +62,7 @@ export default function PatientAppointment({ appointment, onCancelSuccess }) {
           {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
         </span>
       </div>
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
       {appointment.status !== 'cancelled' && (
         <button
