@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
+const Appointment = require('../models/Appointment');
 const auth = require('../middleware/auth');
 
 // Get the authenticated doctor's profile
@@ -127,6 +128,96 @@ router.put('/availability', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating doctor availability:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get doctor availability for a specific date range
+router.get('/:id/availability', auth, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const doctorId = req.params.id;
+
+    // Validate input
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required' });
+    }
+
+    // Convert string dates to Date objects
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate date range
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    // Find all appointments for this doctor in the date range
+    const existingAppointments = await Appointment.find({
+      doctor: doctorId,
+      date: { $gte: start, $lte: end },
+      status: { $ne: 'cancelled' }, // Exclude cancelled appointments
+    }).select('date time');
+
+    // Create a map of booked slots for quick lookup
+    const bookedSlots = {};
+    existingAppointments.forEach(appointment => {
+      const dateKey = appointment.date.toISOString().split('T')[0];
+      if (!bookedSlots[dateKey]) {
+        bookedSlots[dateKey] = [];
+      }
+      bookedSlots[dateKey].push(appointment.time);
+    });
+
+    // Calculate the available days and time slots in the date range
+    const availableDays = [];
+    const bookedSlotsResult = [];
+    
+    // Loop through each day in the date range
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][currentDate.getDay()];
+      
+      // Find the availability for this day of the week
+      const dayAvailability = doctor.availability.find(a => a.day === dayOfWeek);
+      
+      if (dayAvailability && dayAvailability.timeSlots.length > 0) {
+        // This day has available slots in the doctor's schedule
+        const dateString = currentDate.toISOString().split('T')[0];
+        
+        // Add to available days
+        availableDays.push(dateString);
+        
+        // Calculate booked slots for this day
+        const dayBookedSlots = bookedSlots[dateString] || [];
+        if (dayBookedSlots.length > 0) {
+          bookedSlotsResult.push({
+            date: dateString,
+            doctorId: doctor._id,
+            bookedTimes: dayBookedSlots
+          });
+        }
+      }
+      
+      // Move to the next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Return the results
+    res.json({
+      doctorId: doctor._id,
+      doctorName: doctor.user.name, // This will be populated if you run .populate('user')
+      availableDays: availableDays,
+      bookedSlots: bookedSlotsResult
+    });
+  } catch (error) {
+    console.error('Error fetching doctor availability:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

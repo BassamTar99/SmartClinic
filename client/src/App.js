@@ -11,12 +11,13 @@ import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import PatientDashboardPage from './pages/PatientDashboardPage';
 import DoctorDashboardPage from './pages/DoctorDashboardPage';
-import AppointmentConfirmation from './pages/AppointmentConfirmation';
 import ReminderTimelinePage from './pages/ReminderTimelinePage';
 import SmartSchedulingPage from './pages/SmartSchedulingPage';
 import ReservationPage from './pages/ReservationPage';
 import AboutUsPage from './pages/AboutUsPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
+import DoctorProfilePage from './pages/DoctorProfilePage';
+import PatientProfilePage from './pages/PatientProfilePage';
 
 // Configure axios
 axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -90,6 +91,9 @@ function AppContent() {
             <Route path="/patient-dashboard" element={
               isAuthenticated && user?.role === 'patient' ? <PatientDashboardPage /> : <Navigate to={isAuthenticated ? "/dashboard" : "/auth"} />
             } />
+            <Route path="/patient-profile" element={
+              isAuthenticated && user?.role === 'patient' ? <PatientProfilePage /> : <Navigate to={isAuthenticated ? "/dashboard" : "/auth"} />
+            } />
             
             {/* Protected doctor routes */}
             <Route path="/doctor-dashboard" element={
@@ -98,10 +102,8 @@ function AppContent() {
             <Route path="/doctor-schedule" element={
               isAuthenticated && user?.role === 'doctor' ? <DoctorSchedulePage /> : <Navigate to={isAuthenticated ? "/dashboard" : "/auth"} />
             } />
-
-            {/* Common protected routes */}
-            <Route path="/appointments" element={
-              isAuthenticated ? <AppointmentConfirmation /> : <Navigate to="/auth" />
+            <Route path="/doctor-profile" element={
+              isAuthenticated && user?.role === 'doctor' ? <DoctorProfilePage /> : <Navigate to={isAuthenticated ? "/dashboard" : "/auth"} />
             } />
             <Route path="/reminders" element={
               isAuthenticated ? <ReminderTimelinePage /> : <Navigate to="/auth" />
