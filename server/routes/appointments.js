@@ -141,42 +141,73 @@ router.delete('/:id', auth, async (req, res) => {
 // Get available appointment times
 router.get('/available-times', auth, async (req, res) => {
   try {
-    const { date } = req.query;
+    const { doctorId, date } = req.query;
+    
     if (!date) {
       return res.status(400).json({ message: 'Date is required' });
     }
 
-    // Get all doctors' availability for the given day
+    // Get the day of week for the selected date
     const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
-    const doctors = await Doctor.find({
-      'availability.day': dayOfWeek
+    
+    // Find the doctor with the specified ID, or all doctors if no ID is provided
+    const doctorQuery = doctorId ? { _id: doctorId } : {};
+    const doctors = await Doctor.find(doctorQuery).populate('user', 'name email');
+    
+    // If no doctors found
+    if (doctors.length === 0) {
+      return res.status(404).json({ message: 'No doctors found with the specified criteria' });
+    }
+
+    // Get existing appointments for the selected date to check availability
+    const existingAppointments = await Appointment.find({
+      date: {
+        $gte: new Date(new Date(date).setHours(0, 0, 0)),
+        $lt: new Date(new Date(date).setHours(23, 59, 59))
+      },
+      ...(doctorId && { doctor: doctorId }),
+      status: { $ne: 'cancelled' }
     });
 
-    // Generate time slots based on doctors' availability
-    const timeSlots = [];
-    doctors.forEach(doctor => {
-      const availability = doctor.availability.find(a => a.day === dayOfWeek);
-      if (availability) {
-        const startTime = new Date(`2000-01-01T${availability.startTime}`);
-        const endTime = new Date(`2000-01-01T${availability.endTime}`);
-        
-        // Generate 30-minute slots
-        while (startTime < endTime) {
-          const timeString = startTime.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          });
-          timeSlots.push(timeString);
-          startTime.setMinutes(startTime.getMinutes() + 30);
-        }
+    // Map of time slots already booked: { doctorId: ['08:00', '09:00', etc.] }
+    const bookedSlots = {};
+    existingAppointments.forEach(appt => {
+      const docId = appt.doctor.toString();
+      if (!bookedSlots[docId]) {
+        bookedSlots[docId] = [];
       }
+      bookedSlots[docId].push(appt.time);
     });
 
-    // Remove duplicate time slots
-    const uniqueTimeSlots = [...new Set(timeSlots)];
+    // Prepare result with doctor availability and booked slots
+    const result = doctors.map(doctor => {
+      // Find this doctor's availability for the selected day
+      const dayAvailability = doctor.availability.find(a => a.day === dayOfWeek);
+      
+      if (!dayAvailability) {
+        return {
+          doctorId: doctor._id,
+          doctorName: doctor.user.name,
+          availableTimeSlots: [] // Doctor not available on this day
+        };
+      }
+      
+      // Get this doctor's booked slots
+      const doctorBookedSlots = bookedSlots[doctor._id.toString()] || [];
+      
+      // Filter available time slots by removing booked ones
+      const availableTimeSlots = (dayAvailability.timeSlots || [])
+        .filter(slot => !doctorBookedSlots.includes(slot))
+        .sort();
 
-    res.json(uniqueTimeSlots);
+      return {
+        doctorId: doctor._id,
+        doctorName: doctor.user.name,
+        availableTimeSlots
+      };
+    });
+
+    res.json(result);
   } catch (error) {
     console.error('Error fetching available times:', error);
     res.status(500).json({ message: 'Server error' });

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 const bcrypt = require('bcryptjs');
+const auth = require('../middleware/auth'); // Assuming auth middleware is defined
 
 // Register route
 router.post('/register', async (req, res) => {
@@ -39,7 +40,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        _id: user._id, // Using _id instead of id to match MongoDB structure
         name: user.name,
         email: user.email,
         role: user.role
@@ -97,7 +98,7 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        _id: user._id, // Using _id instead of id to match MongoDB structure
         name: user.name,
         email: user.email,
         role: user.role
@@ -113,24 +114,25 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user
-router.get('/me', async (req, res) => {
+router.get('/me', auth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      logger.warn('Unauthorized access attempt - No token provided');
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
+    // Since auth middleware already verified the token and attached user info,
+    // we can directly use req.user
+    const user = await User.findById(req.user.userId).select('-password');
     
     if (!user) {
       logger.warn('Unauthorized access attempt - User not found');
       return res.status(401).json({ message: 'User not found' });
     }
 
+    // Return full user object with _id properly included
     logger.info(`User info retrieved for: ${user.email}`);
-    res.json(user);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
   } catch (error) {
     logger.error('Auth check error:', error);
     res.status(401).json({ message: 'Invalid token' });
@@ -168,4 +170,48 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Update user profile
+router.put('/profile', auth, async (req, res) => {
+  try {
+    logger.info(`Profile update attempt for user ID: ${req.user.userId}`);
+    
+    const { name, phone, address, dateOfBirth } = req.body;
+    
+    // Find and update user
+    const user = await User.findById(req.user.userId);
+    
+    if (!user) {
+      logger.warn(`Profile update failed - User not found: ${req.user.userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update fields
+    user.name = name || user.name;
+    
+    // Only update additional fields if they are provided
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+    
+    await user.save();
+    logger.info(`Profile updated successfully for user: ${user.email}`);
+    
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        dateOfBirth: user.dateOfBirth
+      }
+    });
+  } catch (error) {
+    logger.error('Profile update error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;

@@ -10,6 +10,28 @@ export default function Header() {
     navigate('/');
   };
 
+  // Helper function to determine profile URL based on user role
+  const getProfileUrl = () => {
+    // Make sure user and user.role are defined
+    console.log('Header - Current user:', user);
+    if (!user || !user.role) {
+      console.log('Header - User or user.role is undefined, redirecting to dashboard');
+      return '/dashboard';
+    }
+    console.log(`Header - User role is ${user.role}, redirecting to ${user.role === 'doctor' ? "/doctor-profile" : "/patient-profile"}`);
+    return user.role === 'doctor' ? "/doctor-profile" : "/patient-profile";
+  };
+
+  // For debugging
+  const handleProfileClick = (e) => {
+    console.log('Profile clicked - Current auth state:', { user, isAuthenticated });
+    if (!user || !user.role) {
+      console.log('Warning: User or user role is missing');
+      e.preventDefault();
+      alert('Authentication issue detected. Check console for details.');
+    }
+  };
+
   return (
     <header className="bg-white shadow-sm">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,10 +73,11 @@ export default function Header() {
               )}
               {isAuthenticated && (
                 <Link
-                  to="/appointments"
+                  to={getProfileUrl()}
+                  onClick={handleProfileClick}
                   className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 >
-                  Appointments
+                  Profile
                 </Link>
               )}
             </div>
@@ -86,4 +109,4 @@ export default function Header() {
       </nav>
     </header>
   );
-} 
+}

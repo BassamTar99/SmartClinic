@@ -81,11 +81,17 @@ router.put('/availability', auth, async (req, res) => {
       return res.status(400).json({ message: 'Availability must be an array' });
     }
 
+    // Valid time slots (8 AM to 10 PM in 1-hour blocks)
+    const validTimeSlots = [
+      '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+      '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
+    ];
+
     // Validate each availability slot
     for (const slot of availability) {
-      if (!slot.day || !slot.startTime || !slot.endTime) {
+      if (!slot.day || !slot.timeSlots || !Array.isArray(slot.timeSlots)) {
         return res.status(400).json({ 
-          message: 'Each availability slot must have day, startTime, and endTime' 
+          message: 'Each availability slot must have day and timeSlots array' 
         });
       }
       
@@ -95,16 +101,13 @@ router.put('/availability', auth, async (req, res) => {
         return res.status(400).json({ message: 'Invalid day of week' });
       }
 
-      // Validate time format (could add more validation here)
-      if (!/^\d{2}:\d{2}$/.test(slot.startTime) || !/^\d{2}:\d{2}$/.test(slot.endTime)) {
-        return res.status(400).json({ message: 'Time must be in format HH:MM' });
-      }
-
-      // Ensure startTime is before endTime
-      if (slot.startTime >= slot.endTime) {
-        return res.status(400).json({ 
-          message: 'Start time must be earlier than end time' 
-        });
+      // Validate time slots
+      for (const timeSlot of slot.timeSlots) {
+        if (!validTimeSlots.includes(timeSlot)) {
+          return res.status(400).json({ 
+            message: `Invalid time slot: ${timeSlot}. Time slots must be on the hour from 08:00 to 22:00` 
+          });
+        }
       }
     }
 
@@ -157,4 +160,4 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

@@ -12,15 +12,21 @@ export default function DoctorSchedulePage() {
   const [doctor, setDoctor] = useState(null);
   const navigate = useNavigate();
 
+  // Define all available time slots (8 AM to 10 PM)
+  const availableTimeSlots = [
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
+  ];
+
   // This will store the doctor's availability schedule
   const [scheduleData, setScheduleData] = useState({
-    Monday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Tuesday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Wednesday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Thursday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Friday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Saturday: { enabled: false, startTime: '09:00', endTime: '17:00' },
-    Sunday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+    Monday: { enabled: false, timeSlots: [] },
+    Tuesday: { enabled: false, timeSlots: [] },
+    Wednesday: { enabled: false, timeSlots: [] },
+    Thursday: { enabled: false, timeSlots: [] },
+    Friday: { enabled: false, timeSlots: [] },
+    Saturday: { enabled: false, timeSlots: [] },
+    Sunday: { enabled: false, timeSlots: [] }
   });
 
   useEffect(() => {
@@ -54,8 +60,7 @@ export default function DoctorSchedulePage() {
           response.data.availability.forEach(slot => {
             initialSchedule[slot.day] = {
               enabled: true,
-              startTime: slot.startTime,
-              endTime: slot.endTime
+              timeSlots: slot.timeSlots || []
             };
           });
           
@@ -81,19 +86,39 @@ export default function DoctorSchedulePage() {
       ...prevState,
       [day]: {
         ...prevState[day],
-        enabled: !prevState[day].enabled
+        enabled: !prevState[day].enabled,
+        // Clear time slots if disabling the day
+        timeSlots: !prevState[day].enabled ? [] : prevState[day].timeSlots
       }
     }));
   };
 
-  const handleTimeChange = (day, field, value) => {
-    setScheduleData(prevState => ({
-      ...prevState,
-      [day]: {
-        ...prevState[day],
-        [field]: value
+  const handleTimeSlotToggle = (day, timeSlot) => {
+    setScheduleData(prevState => {
+      const currentTimeSlots = prevState[day].timeSlots || [];
+      let updatedTimeSlots;
+      
+      if (currentTimeSlots.includes(timeSlot)) {
+        // Remove the time slot if already selected
+        updatedTimeSlots = currentTimeSlots.filter(slot => slot !== timeSlot);
+      } else {
+        // Add the time slot if not already selected
+        updatedTimeSlots = [...currentTimeSlots, timeSlot].sort();
       }
-    }));
+      
+      return {
+        ...prevState,
+        [day]: {
+          ...prevState[day],
+          timeSlots: updatedTimeSlots
+        }
+      };
+    });
+  };
+
+  const formatTimeDisplay = (timeString) => {
+    const hour = parseInt(timeString.split(':')[0], 10);
+    return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
   };
 
   const handleSubmit = async (e) => {
@@ -105,11 +130,10 @@ export default function DoctorSchedulePage() {
     try {
       // Convert schedule data to the format expected by the API
       const availability = Object.entries(scheduleData)
-        .filter(([_, value]) => value.enabled)
+        .filter(([_, value]) => value.enabled && value.timeSlots.length > 0)
         .map(([day, value]) => ({
           day,
-          startTime: value.startTime,
-          endTime: value.endTime
+          timeSlots: value.timeSlots
         }));
 
       // Send the updated availability to the server
@@ -136,7 +160,7 @@ export default function DoctorSchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Manage Your Schedule</h1>
           <button
@@ -166,14 +190,15 @@ export default function DoctorSchedulePage() {
         ) : (
           <div className="bg-white rounded-lg shadow p-6">
             <p className="mb-6 text-gray-600">
-              Set your weekly availability schedule. This will determine when patients can book appointments with you.
+              Set your weekly availability schedule by selecting 1-hour time blocks from 8 AM to 10 PM. 
+              This will determine when patients can book appointments with you.
             </p>
 
             <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                {Object.entries(scheduleData).map(([day, { enabled, startTime, endTime }]) => (
-                  <div key={day} className="flex flex-col sm:flex-row sm:items-center p-4 border rounded hover:bg-gray-50">
-                    <div className="flex items-center mb-2 sm:mb-0 sm:w-1/3">
+              <div className="space-y-6">
+                {Object.entries(scheduleData).map(([day, { enabled, timeSlots }]) => (
+                  <div key={day} className="p-4 border rounded hover:bg-gray-50">
+                    <div className="flex items-center mb-4">
                       <input
                         type="checkbox"
                         id={`enable-${day}`}
@@ -181,38 +206,36 @@ export default function DoctorSchedulePage() {
                         onChange={() => handleToggleDay(day)}
                         className="mr-2 h-5 w-5 text-blue-600"
                       />
-                      <label htmlFor={`enable-${day}`} className="font-medium">
+                      <label htmlFor={`enable-${day}`} className="font-medium text-lg">
                         {day}
                       </label>
                     </div>
                     
                     {enabled && (
-                      <div className="flex flex-col sm:flex-row sm:w-2/3 gap-4">
-                        <div className="flex-1">
-                          <label htmlFor={`start-${day}`} className="block text-sm text-gray-700 mb-1">
-                            Start Time
-                          </label>
-                          <input
-                            type="time"
-                            id={`start-${day}`}
-                            value={startTime}
-                            onChange={(e) => handleTimeChange(day, 'startTime', e.target.value)}
-                            className="w-full border border-gray-300 rounded p-2"
-                            required={enabled}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label htmlFor={`end-${day}`} className="block text-sm text-gray-700 mb-1">
-                            End Time
-                          </label>
-                          <input
-                            type="time"
-                            id={`end-${day}`}
-                            value={endTime}
-                            onChange={(e) => handleTimeChange(day, 'endTime', e.target.value)}
-                            className="w-full border border-gray-300 rounded p-2"
-                            required={enabled}
-                          />
+                      <div>
+                        <p className="mb-2 text-sm text-gray-600">Select available time slots:</p>
+                        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-2">
+                          {availableTimeSlots.map(timeSlot => (
+                            <div key={timeSlot} className="relative">
+                              <input
+                                type="checkbox"
+                                id={`${day}-${timeSlot}`}
+                                checked={timeSlots.includes(timeSlot)}
+                                onChange={() => handleTimeSlotToggle(day, timeSlot)}
+                                className="sr-only"
+                              />
+                              <label
+                                htmlFor={`${day}-${timeSlot}`}
+                                className={`block p-2 text-center text-sm border rounded cursor-pointer transition-colors ${
+                                  timeSlots.includes(timeSlot)
+                                    ? 'bg-blue-500 text-white border-blue-600'
+                                    : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                                }`}
+                              >
+                                {formatTimeDisplay(timeSlot)}
+                              </label>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -235,4 +258,4 @@ export default function DoctorSchedulePage() {
       </div>
     </div>
   );
-} 
+}

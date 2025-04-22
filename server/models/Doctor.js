@@ -24,14 +24,10 @@ const DoctorSchema = new mongoose.Schema({
       enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
       required: true
     },
-    startTime: {
+    timeSlots: [{
       type: String,
       required: true
-    },
-    endTime: {
-      type: String,
-      required: true
-    }
+    }]
   }],
   consultationFee: {
     type: Number,
@@ -39,4 +35,4 @@ const DoctorSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Doctor', DoctorSchema); 
+module.exports = mongoose.model('Doctor', DoctorSchema);

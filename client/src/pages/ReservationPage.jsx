@@ -15,25 +15,43 @@ export default function ReservationPage() {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [availableTimes, setAvailableTimes] = useState([]);
+  const [availableDoctorTimeSlots, setAvailableDoctorTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [doctors, setDoctors] = useState([]);
-  const [availableDoctors, setAvailableDoctors] = useState([]);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [doctorsError, setDoctorsError] = useState("");
 
-  // Fetch available appointment times
+  // Get the current date and year
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  // Format time display (convert 24-hour format to 12-hour format)
+  const formatTimeDisplay = (timeString) => {
+    const hour = parseInt(timeString.split(':')[0], 10);
+    return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  // Fetch available appointment times for the selected date
   useEffect(() => {
     if (selectedDate) {
       const fetchAvailableTimes = async () => {
         try {
           setLoading(true);
-          const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
+          const appointmentDate = new Date(currentYear, currentMonth, selectedDate);
           const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments/available-times`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
             params: { date: appointmentDate.toISOString() }
           });
-          setAvailableTimes(response.data);
+          
+          setAvailableDoctorTimeSlots(response.data);
+          setDoctors(response.data.map(item => ({
+            id: item.doctorId,
+            name: item.doctorName
+          })));
         } catch (err) {
           setError("Failed to fetch available times");
           console.error(err);
@@ -42,36 +60,16 @@ export default function ReservationPage() {
         }
       };
       fetchAvailableTimes();
-    }
-  }, [selectedDate]);
-
-  // effect to fetch and filter available doctors when date and time are selected
-  useEffect(() => {
-    if (selectedDate && selectedTime) {
-      setDoctorsLoading(true);
-      setDoctorsError("");
-      axios.get(`${process.env.REACT_APP_API_URL}/doctors`)
-        .then(res => {
-          const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
-          const weekday = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' });
-          const filtered = res.data.filter(doc =>
-            doc.availability.some(slot =>
-              slot.day === weekday &&
-              slot.startTime <= selectedTime &&
-              slot.endTime >= selectedTime
-            )
-          );
-          setAvailableDoctors(filtered);
-        })
-        .catch(err => {
-          console.error(err);
-          setDoctorsError('Failed to fetch doctors');
-        })
-        .finally(() => setDoctorsLoading(false));
     } else {
-      setAvailableDoctors([]);
+      setAvailableDoctorTimeSlots([]);
+      setDoctors([]);
     }
-  }, [selectedDate, selectedTime]);
+  }, [selectedDate, currentMonth, currentYear]);
+
+  const handleDoctorSelect = (doctor) => {
+    setSelectedDoctor(doctor);
+    setSelectedTime(""); // Reset time selection when doctor changes
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,28 +81,14 @@ export default function ReservationPage() {
     try {
       setLoading(true);
       // Create a proper date object for the selected date
-      const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
+      const appointmentDate = new Date(currentYear, currentMonth, selectedDate);
 
-      // Convert time to 24-hour format if it's in 12-hour format
-      let formattedTime = selectedTime;
-      const timeParts = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-      if (timeParts) {
-        let [_, hours, minutes, period] = timeParts;
-        hours = parseInt(hours);
-        if (period && period.toUpperCase() === 'PM' && hours < 12) {
-          hours += 12;
-        } else if (period && period.toUpperCase() === 'AM' && hours === 12) {
-          hours = 0;
-        }
-        formattedTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
-      }
-      
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/appointments`, {
         date: appointmentDate.toISOString(),
-        time: formattedTime,
+        time: selectedTime, // Already in HH:MM 24-hour format
         symptoms: description,
         notes: "Appointment requested through web interface",
-        doctor: selectedDoctor._id,
+        doctor: selectedDoctor.id,
         patient: user._id
       }, {
         headers: {
@@ -193,7 +177,7 @@ export default function ReservationPage() {
           <button
             type="submit"
             className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-            disabled={!formFilled || loading}
+            disabled={!formFilled || loading || !selectedDoctor || !selectedTime}
           >
             {loading ? 'Scheduling...' : 'Submit'}
           </button>
@@ -202,7 +186,7 @@ export default function ReservationPage() {
         {/* Right Panel */}
         <div className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/2">
           <h2 className="text-lg font-semibold mb-4">Select a Date & Time</h2>
-          <p className="mb-2 text-sm text-gray-600">April 2024</p>
+          <p className="mb-2 text-sm text-gray-600">{new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
           <div className="grid grid-cols-7 gap-2 text-center text-sm mb-4">
             {[...Array(30)].map((_, i) => (
               <button
@@ -215,59 +199,67 @@ export default function ReservationPage() {
             ))}
           </div>
           
+          {/* Doctor Selection */}
+          {selectedDate && !loading && (
+            <div className="mt-6 mb-4">
+              <h2 className="text-lg font-semibold mb-2">Available Doctors</h2>
+              {availableDoctorTimeSlots.length === 0 ? (
+                <p className="text-gray-500">No doctors available on this day.</p>
+              ) : (
+                <div className="space-y-2">
+                  {availableDoctorTimeSlots.map((doctorData) => (
+                    <div key={doctorData.doctorId} className="border rounded p-2 hover:bg-gray-50">
+                      <button
+                        type="button"
+                        className={`w-full text-left p-1 rounded ${selectedDoctor?.id === doctorData.doctorId ? 'bg-blue-50' : ''}`}
+                        onClick={() => handleDoctorSelect({
+                          id: doctorData.doctorId,
+                          name: doctorData.doctorName
+                        })}
+                      >
+                        <span className="font-medium">Dr. {doctorData.doctorName}</span>
+                        <span className="text-gray-500 text-xs block">
+                          {doctorData.availableTimeSlots.length} available time slots
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Time Selection */}
-          {selectedDate && (
+          {selectedDoctor && (
             <div className="mb-4">
-              <label className="block mb-2 font-medium">Available Times</label>
+              <h2 className="text-lg font-semibold mb-2">Available Time Slots</h2>
               {loading ? (
                 <p>Loading available times...</p>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {availableTimes.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => setSelectedTime(time)}
-                      className={`px-3 py-2 rounded ${
-                        selectedTime === time ? 'bg-blue-500 text-white' : 'border hover:bg-blue-100'
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {availableDoctorTimeSlots
+                    .find(d => d.doctorId === selectedDoctor.id)?.availableTimeSlots
+                    .map((timeSlot) => (
+                      <button
+                        key={timeSlot}
+                        type="button"
+                        onClick={() => setSelectedTime(timeSlot)}
+                        className={`px-3 py-2 text-center border rounded 
+                          ${selectedTime === timeSlot ? 
+                            'bg-blue-500 text-white' : 
+                            'hover:bg-blue-100'}`}
+                      >
+                        {formatTimeDisplay(timeSlot)}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
           )}
           
           <p className="text-sm text-gray-600 mb-4">
-            <span role="img" aria-label="globe">🌍</span> Central European Time
+            <span role="img" aria-label="globe">🌍</span> Appointment duration: 1 hour
           </p>
-
-          {/* Available doctors at selected time */}
-          {selectedDate && selectedTime && (
-            <div className="mt-6 bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold mb-2">Available Doctors</h2>
-              {doctorsLoading ? (
-                <p>Loading doctors...</p>
-              ) : doctorsError ? (
-                <p className="text-red-500">{doctorsError}</p>
-              ) : availableDoctors.length > 0 ? (
-                <ul className="list-disc list-inside space-y-1">
-                  {availableDoctors.map(doc => (
-                    <li 
-                      key={doc._id}
-                      className={`cursor-pointer p-2 rounded ${selectedDoctor?._id === doc._id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
-                      onClick={() => setSelectedDoctor(doc)}
-                    >
-                      Dr. {doc.user.name} - {doc.specialization}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No doctors available at this time.</p>
-              )}
-            </div>
-          )}
         </div>
       </main>
     </div>

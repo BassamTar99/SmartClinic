@@ -8,12 +8,13 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const apiUrl = process.env.REACT_APP_API_URL || '';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       console.log('Auth check - Token found in localStorage:', token);
-      axios.get('/auth/me', {
+      axios.get(`${apiUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(response => {
@@ -31,12 +32,12 @@ export const AuthProvider = ({ children }) => {
       console.log('Auth check - No token found in localStorage');
       setLoading(false);
     }
-  }, []);
+  }, [apiUrl]);
 
   const login = async (email, password) => {
     try {
       console.log('Login attempt with email:', email);
-      const response = await axios.post('/auth/login', { email, password });
+      const response = await axios.post(`${apiUrl}/auth/login`, { email, password });
       console.log('Login response:', response.data);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
@@ -56,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       console.log('Registration attempt with data:', userData);
-      const response = await axios.post('/auth/register', userData);
+      const response = await axios.post(`${apiUrl}/auth/register`, userData);
       console.log('Registration response:', response.data);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
