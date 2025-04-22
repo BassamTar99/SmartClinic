@@ -13,6 +13,8 @@ export default function AppointmentConfirmation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [suggestedAppointments, setSuggestedAppointments] = useState([]);
+  const [doctorName, setDoctorName] = useState("");
+  const [availableSlots, setAvailableSlots] = useState([]);
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -52,6 +54,16 @@ export default function AppointmentConfirmation() {
     fetchAppointment();
   }, [appointmentId, user]);
 
+  useEffect(() => {
+    // Generate available slots from 8 AM to 4 PM in 1-hour intervals
+    const slots = [];
+    for (let hour = 8; hour <= 16; hour++) {
+      const time = `${hour}:00`;
+      slots.push(time);
+    }
+    setAvailableSlots(slots);
+  }, []);
+
   const handleReschedule = async (newAppointmentId) => {
     try {
       await axios.patch(
@@ -68,6 +80,10 @@ export default function AppointmentConfirmation() {
       setError("Failed to reschedule appointment");
       console.error(err);
     }
+  };
+
+  const handleDoctorSelection = (e) => {
+    setDoctorName(e.target.value);
   };
 
   const formatDate = (dateString) => {
@@ -128,8 +144,8 @@ export default function AppointmentConfirmation() {
         
         <div className="mb-8">
           <p className="text-center text-gray-600 mb-4">
-            Your appointment with <strong>Dr. {appointment.doctor?.name}</strong> is scheduled for{' '}
-            <strong>{formatDate(appointment.date)} at {formatTime(appointment.time)}</strong>.
+            Your appointment with <strong>Dr. {appointment?.doctor?.name || doctorName}</strong> is scheduled for{' '}
+            <strong>{formatDate(appointment?.date)} at {formatTime(appointment?.time)}</strong>.
           </p>
 
           <div className="bg-blue-50 p-6 rounded-lg">
@@ -137,16 +153,27 @@ export default function AppointmentConfirmation() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-600">
-                  <span className="font-medium">Status: </span>
-                  <span className={`inline-block px-2 py-1 rounded ${
-                    appointment.status === 'scheduled' ? 'bg-green-100 text-green-800' :
-                    appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                  </span>
-                </p>
+                <label htmlFor="doctorName" className="block text-gray-700 font-medium mb-2">Select Doctor</label>
+                <input
+                  type="text"
+                  id="doctorName"
+                  value={doctorName}
+                  onChange={handleDoctorSelection}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  placeholder="Enter doctor's name"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="availableSlots" className="block text-gray-700 font-medium mb-2">Available Slots</label>
+                <select
+                  id="availableSlots"
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                >
+                  {availableSlots.map((slot, index) => (
+                    <option key={index} value={slot}>{slot}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -204,6 +231,19 @@ export default function AppointmentConfirmation() {
             </div>
           </div>
         )}
+
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4">System Checker & Doctor Recommendation</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Use our system checker to analyze symptoms and get doctor recommendations.
+          </p>
+          <button
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => navigate('/symptom-checker')}
+          >
+            Go to System Checker
+          </button>
+        </div>
 
         <div className="flex justify-center">
           <button
