@@ -26,7 +26,15 @@ router.get('/', auth, async (req, res) => {
       })
       .sort({ date: 1 });
 
-    res.json(appointments);
+    const formattedAppointments = appointments.map(appt => ({
+      ...appt._doc,
+      doctor: {
+        ...appt.doctor._doc,
+        name: appt.doctor.user.name
+      }
+    }));
+
+    res.json(formattedAppointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.status(500).json({ message: 'Server error' });
@@ -38,18 +46,55 @@ router.post('/', auth, async (req, res) => {
   try {
     const { patient, doctor, date, time, symptoms, notes } = req.body;
 
+    // Ensure time is in HH:mm format
+    let formattedTime = time;
+    if (time) {
+      // Convert potential 12-hour format to 24-hour format
+      const timeParts = time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (timeParts) {
+        let [_, hours, minutes, period] = timeParts;
+        hours = parseInt(hours);
+        if (period && period.toUpperCase() === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (period && period.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+        formattedTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+      }
+    }
+
     const appointment = new Appointment({
       patient,
       doctor,
       date,
-      time,
-      symptoms,
+      time: formattedTime,
+      symptoms: typeof symptoms === 'string' ? [symptoms] : symptoms,
       notes
     });
 
     await appointment.save();
 
-    res.status(201).json(appointment);
+    // Fetch the saved appointment with populated fields
+    const populatedAppointment = await Appointment.findById(appointment._id)
+      .populate('patient', 'name email')
+      .populate({
+        path: 'doctor',
+        populate: {
+          path: 'user',
+          select: 'name email'
+        }
+      });
+
+    // Format the response
+    const formattedAppointment = {
+      ...populatedAppointment._doc,
+      doctor: {
+        ...populatedAppointment.doctor._doc,
+        name: populatedAppointment.doctor.user.name
+      }
+    };
+
+    res.status(201).json(formattedAppointment);
   } catch (error) {
     console.error('Error creating appointment:', error);
     res.status(500).json({ message: 'Server error' });
@@ -138,4 +183,33 @@ router.get('/available-times', auth, async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Get appointments for a specific patient
+router.get('/patient/:id', auth, async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ patient: req.params.id })
+      .populate('patient', 'name email')
+      .populate({
+        path: 'doctor',
+        populate: {
+          path: 'user',
+          select: 'name email'
+        }
+      })
+      .sort({ date: 1 });
+
+    const formattedAppointments = appointments.map(appt => ({
+      ...appt._doc,
+      doctor: {
+        ...appt.doctor._doc,
+        name: appt.doctor.user.name
+      }
+    }));
+
+    res.json(formattedAppointments);
+  } catch (error) {
+    console.error('Error fetching patient appointments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;

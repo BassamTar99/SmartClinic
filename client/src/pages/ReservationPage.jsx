@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function ReservationPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [description, setDescription] = useState("");
   const [formFilled, setFormFilled] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [availableTimes, setAvailableTimes] = useState([]);
@@ -24,8 +29,9 @@ export default function ReservationPage() {
       const fetchAvailableTimes = async () => {
         try {
           setLoading(true);
+          const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
           const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments/available-times`, {
-            params: { date: selectedDate }
+            params: { date: appointmentDate.toISOString() }
           });
           setAvailableTimes(response.data);
         } catch (err) {
@@ -46,8 +52,8 @@ export default function ReservationPage() {
       setDoctorsError("");
       axios.get(`${process.env.REACT_APP_API_URL}/doctors`)
         .then(res => {
-          const weekday = new Date(`2024-04-${String(selectedDate).padStart(2,'0')}`)
-            .toLocaleDateString('en-US', { weekday: 'long' });
+          const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
+          const weekday = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' });
           const filtered = res.data.filter(doc =>
             doc.availability.some(slot =>
               slot.day === weekday &&
@@ -69,33 +75,46 @@ export default function ReservationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedDate || !selectedTime) {
-      setError("Please select both date and time");
+    if (!selectedDate || !selectedTime || !selectedDoctor) {
+      setError("Please select date, time and doctor");
       return;
     }
 
     try {
       setLoading(true);
+      // Create a proper date object for the selected date
+      const appointmentDate = new Date(2024, 3, selectedDate); // Month is 0-based, so 3 is April
+
+      // Convert time to 24-hour format if it's in 12-hour format
+      let formattedTime = selectedTime;
+      const timeParts = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (timeParts) {
+        let [_, hours, minutes, period] = timeParts;
+        hours = parseInt(hours);
+        if (period && period.toUpperCase() === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (period && period.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+        formattedTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+      }
+      
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/appointments`, {
-        date: selectedDate,
-        time: selectedTime,
+        date: appointmentDate.toISOString(),
+        time: formattedTime,
         symptoms: description,
-        notes: "Appointment requested through web interface"
+        notes: "Appointment requested through web interface",
+        doctor: selectedDoctor._id,
+        patient: user._id
       }, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      setNotificationMessage("Appointment scheduled successfully!");
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 5000);
-      
-      // Reset form
-      setDescription("");
-      setSelectedDate(null);
-      setSelectedTime("");
-      setFormFilled(false);
+      // Navigate to the confirmation page
+      navigate(`/appointment-confirmation/${response.data._id}`);
+
     } catch (err) {
       setError("Failed to schedule appointment. Please try again.");
       console.error(err);
@@ -235,7 +254,11 @@ export default function ReservationPage() {
               ) : availableDoctors.length > 0 ? (
                 <ul className="list-disc list-inside space-y-1">
                   {availableDoctors.map(doc => (
-                    <li key={doc._id}>
+                    <li 
+                      key={doc._id}
+                      className={`cursor-pointer p-2 rounded ${selectedDoctor?._id === doc._id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                      onClick={() => setSelectedDoctor(doc)}
+                    >
                       Dr. {doc.user.name} - {doc.specialization}
                     </li>
                   ))}
