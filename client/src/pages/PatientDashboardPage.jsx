@@ -152,9 +152,15 @@ export default function PatientDashboardPage() {
             >
               View Reminders
             </button>
+            <button
+              onClick={() => navigate("/smart-scheduling")}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Smart Scheduling
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
