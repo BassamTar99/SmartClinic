@@ -22,12 +22,18 @@ export default function DoctorDashboardPage() {
           return;
         }
 
+        // Fetch the doctor's profile to get the Doctor collection _id
+        const profileRes = await axios.get(`${process.env.REACT_APP_API_URL}/doctors/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const doctorProfileId = profileRes.data._id;
+
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments`, {
           headers: {
             Authorization: `Bearer ${token}`
           },
           params: {
-            doctorId: user?._id
+            doctorId: doctorProfileId
           }
         });
         console.log("Doctor appointments fetched successfully:", response.data);
@@ -158,7 +164,7 @@ export default function DoctorDashboardPage() {
                         </td>
                         <td className="p-3">
                           <button
-                            onClick={() => navigate(`/appointment-confirmation/${appt._id}`)}
+                            onClick={() => navigate(`/appointment/${appt._id}`)}
                             className="text-blue-600 hover:text-blue-800"
                           >
                             View Details

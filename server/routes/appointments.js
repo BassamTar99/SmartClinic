@@ -11,7 +11,22 @@ router.get('/', auth, async (req, res) => {
     const query = {};
 
     if (patientId) query.patient = patientId;
-    if (doctorId) query.doctor = doctorId;
+    if (doctorId) {
+      // Try to find a doctor with this _id
+      let doctor = await Doctor.findById(doctorId);
+      if (doctor) {
+        query.doctor = doctorId;
+      } else {
+        // If not found, try to find by user id
+        doctor = await Doctor.findOne({ user: doctorId });
+        if (doctor) {
+          query.doctor = doctor._id;
+        } else {
+          // No doctor found, return empty result
+          return res.json([]);
+        }
+      }
+    }
     if (status) query.status = status;
     if (date) query.date = new Date(date);
 

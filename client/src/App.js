@@ -18,6 +18,7 @@ import AboutUsPage from './pages/AboutUsPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
 import DoctorProfilePage from './pages/DoctorProfilePage';
 import PatientProfilePage from './pages/PatientProfilePage';
+import AppointmentDetailsPage from './pages/AppointmentDetailsPage';
 
 // Configure axios
 axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -114,6 +115,7 @@ function AppContent() {
             <Route path="/reservation" element={
               isAuthenticated ? <ReservationPage /> : <Navigate to="/auth" />
             } />
+            <Route path="/appointment/:id" element={<AppointmentDetailsPage />} />
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" />} />
