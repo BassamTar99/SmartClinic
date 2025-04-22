@@ -663,6 +663,33 @@ export default function ReservationPage() {
           </p>
         </div>
       </main>
+
+      {/* Symptom Checker Button */}
+      <button
+        className="fixed bottom-6 right-6 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600"
+        onClick={() => setSymptomCheckerVisible(!symptomCheckerVisible)}
+      >
+        Help
+      </button>
+
+      {symptomCheckerVisible && (
+        <div className="fixed bottom-20 right-6 bg-white border shadow-lg rounded-lg w-80 p-4 z-50">
+          <h2 className="text-lg font-semibold mb-2">Symptom Checker</h2>
+          <textarea
+            className="w-full border border-gray-300 rounded-md p-2 mb-4"
+            rows="4"
+            placeholder="Enter your symptoms"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handleSymptomChecker}
+          >
+            Check Symptoms
+          </button>
+        </div>
+      )}
     </div>
   );
 }
