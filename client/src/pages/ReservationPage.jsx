@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
 
 export default function ReservationPage() {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export default function ReservationPage() {
   const [doctors, setDoctors] = useState([]);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [doctorsError, setDoctorsError] = useState("");
+  const [searchDoctor, setSearchDoctor] = useState("");
+  const [symptomCheckerVisible, setSymptomCheckerVisible] = useState(false);
 
   // Get the current date and year
   const today = new Date();
@@ -71,6 +74,17 @@ export default function ReservationPage() {
     setSelectedTime(""); // Reset time selection when doctor changes
   };
 
+  const handleSymptomChecker = async () => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/symptomChecker`, {
+        symptoms: description,
+      });
+      alert(`Recommended Doctor: ${response.data.recommendedDoctor}`);
+    } catch (err) {
+      console.error("Symptom checker failed", err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedDate || !selectedTime || !selectedDoctor) {
@@ -106,6 +120,10 @@ export default function ReservationPage() {
       setLoading(false);
     }
   };
+
+  const filteredDoctors = doctors.filter((doctor) =>
+    doctor.name.toLowerCase().includes(searchDoctor.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100 text-gray-800">
@@ -199,6 +217,28 @@ export default function ReservationPage() {
             ))}
           </div>
           
+          {/* Doctor Dropdown with Search */}
+          <div className="mt-6 mb-4">
+            <h2 className="text-lg font-semibold mb-2">Search and Select a Doctor</h2>
+            <input
+              type="text"
+              placeholder="Search for a doctor"
+              className="w-full border border-gray-300 rounded-md p-2 mb-4"
+              value={searchDoctor}
+              onChange={(e) => setSearchDoctor(e.target.value)}
+            />
+            <Select
+              options={filteredDoctors.map((doctor) => ({
+                value: doctor.id,
+                label: doctor.name,
+              }))}
+              onChange={(selectedOption) =>
+                handleDoctorSelect({ id: selectedOption.value, name: selectedOption.label })
+              }
+              placeholder="Select a doctor"
+            />
+          </div>
+
           {/* Doctor Selection */}
           {selectedDate && !loading && (
             <div className="mt-6 mb-4">
@@ -262,6 +302,33 @@ export default function ReservationPage() {
           </p>
         </div>
       </main>
+
+      {/* Symptom Checker Button */}
+      <button
+        className="fixed bottom-6 right-6 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600"
+        onClick={() => setSymptomCheckerVisible(!symptomCheckerVisible)}
+      >
+        Help
+      </button>
+
+      {symptomCheckerVisible && (
+        <div className="fixed bottom-20 right-6 bg-white border shadow-lg rounded-lg w-80 p-4 z-50">
+          <h2 className="text-lg font-semibold mb-2">Symptom Checker</h2>
+          <textarea
+            className="w-full border border-gray-300 rounded-md p-2 mb-4"
+            rows="4"
+            placeholder="Enter your symptoms"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handleSymptomChecker}
+          >
+            Check Symptoms
+          </button>
+        </div>
+      )}
     </div>
   );
 }
