@@ -4,6 +4,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 import joblib
 import os
+import sys
+import json
 
 # Load dataset
 path = "path_to_dataset"
@@ -61,3 +63,17 @@ def predict_disease(symptoms_text):
     prognosis_encoded = model.predict([symptom_vector])
     prognosis = label_encoder.inverse_transform(prognosis_encoded)[0]
     return generate_case_report(symptoms_text, prognosis)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python symptom_checker.py '<symptoms_text>'")
+        sys.exit(1)
+
+    symptoms_text = sys.argv[1]
+
+    try:
+        # Predict disease
+        result = predict_disease(symptoms_text)
+        print(json.dumps(result, indent=4))
+    except Exception as e:
+        print(f"Error: {e}")
