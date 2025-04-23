@@ -227,31 +227,51 @@ router.get('/:id/availability', auth, async (req, res) => {
 router.post('/match', auth, async (req, res) => {
   try {
     const { preferredDate, preferredTimes, symptoms } = req.body;
+    console.log('[MATCH] Incoming request:', { preferredDate, preferredTimes, symptoms });
     if (!preferredDate || !Array.isArray(preferredTimes) || preferredTimes.length === 0) {
+      console.log('[MATCH] Missing required fields');
       return res.status(400).json({ message: 'preferredDate and preferredTimes[] are required' });
     }
 
-    if (!symptoms || symptoms.length === 0) {
+    // Ensure symptoms is always an array
+    let symptomsArray = symptoms;
+    if (typeof symptoms === 'string') {
+      // Try splitting on comma or just wrap in array
+      if (symptoms.includes(',')) {
+        symptomsArray = symptoms.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        symptomsArray = [symptoms.trim()];
+      }
+    }
+    if (!Array.isArray(symptomsArray) || symptomsArray.length === 0) {
+      console.log('[MATCH] Missing symptoms');
       return res.status(400).json({ message: 'Symptoms are required' });
     }
+    console.log('[MATCH] Using symptoms array:', symptomsArray);
 
     // Predict the disease and get the required specialties
-    const diseasePrediction = await predictDisease(symptoms);
+    console.log('[MATCH] Calling predictDisease...');
+    const diseasePrediction = await predictDisease(symptomsArray);
+    console.log('[MATCH] predictDisease result:', diseasePrediction);
     const requiredSpecialties = diseasePrediction.doctor_recommendation.specialist.split(',').map(s => s.trim());
+    console.log('[MATCH] Predicted disease and required specialties:', { diseasePrediction, requiredSpecialties });
 
     // Find all doctors
     const doctors = await Doctor.find().populate('user', 'name email');
+    console.log(`[MATCH] Found ${doctors.length} doctors in DB`);
     const dateObj = new Date(preferredDate);
     const dayOfWeek = [
       'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
     ][dateObj.getDay()];
     const dateString = dateObj.toISOString().split('T')[0];
+    console.log(`[MATCH] Matching for dayOfWeek: ${dayOfWeek}, dateString: ${dateString}`);
 
     // Find all appointments for the preferred date
     const appointments = await Appointment.find({
       date: dateString,
       status: { $ne: 'cancelled' }
     });
+    console.log(`[MATCH] Found ${appointments.length} appointments on ${dateString}`);
 
     // Build a map: { doctorId: [bookedTime, ...] }
     const bookedMap = {};
@@ -260,6 +280,7 @@ router.post('/match', auth, async (req, res) => {
       if (!bookedMap[docId]) bookedMap[docId] = [];
       bookedMap[docId].push(appt.time);
     });
+    console.log('[MATCH] Booked map:', bookedMap);
 
     // Filter doctors who match the specialties and are available for at least one requested time
     const matchedDoctors = doctors.filter(doctor => {
@@ -269,11 +290,16 @@ router.post('/match', auth, async (req, res) => {
       if (!avail || !avail.timeSlots || avail.timeSlots.length === 0) return false;
 
       // Find at least one preferred time that is in doctor's available slots and not booked
-      return preferredTimes.some(time =>
+      const result = preferredTimes.some(time =>
         avail.timeSlots.includes(time) &&
         !(bookedMap[doctor._id.toString()] || []).includes(time)
       );
+      if (result) {
+        console.log(`[MATCH] Doctor matched: ${doctor.user.name} (${doctor._id})`);
+      }
+      return result;
     });
+    console.log(`[MATCH] Matched ${matchedDoctors.length} doctors`);
 
     res.json({
       diseasePrediction,
