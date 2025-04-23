@@ -5,7 +5,7 @@ const { PythonShell } = require('python-shell');
 
 // Load the model and label encoder paths
 const modelPath = path.join(__dirname, '../models/symptom_checker_model.pkl');
-const labelEncoderPath = path.join(__dirname, '../models/symptom_checker_label_encoder (1).pkl');
+const labelEncoderPath = path.join(__dirname, '../models/symptom_checker_label_encoder.pkl');
 
 // Predict disease based on symptoms
 async function predictDisease(symptoms) {
