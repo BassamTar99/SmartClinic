@@ -2,7 +2,7 @@
 FROM node:20 AS client-build
 
 WORKDIR /app/client
-COPY client/package.json client/package-lock.json ./
+COPY client/package.json ./
 RUN npm install
 COPY client/ ./
 RUN npm run build
@@ -11,7 +11,7 @@ RUN npm run build
 FROM node:20 AS server-build
 
 WORKDIR /app/server
-COPY server/package.json server/package-lock.json ./
+COPY server/package.json ./
 RUN npm install --production
 COPY server/ ./
 
