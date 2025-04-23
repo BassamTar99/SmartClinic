@@ -4,6 +4,7 @@ const Doctor = require('../models/Doctor');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 const auth = require('../middleware/auth');
+const { predictDisease } = require('../utils/symptomCheckerUtils');
 
 // Get the authenticated doctor's profile
 router.get('/profile', auth, async (req, res) => {
@@ -230,6 +231,14 @@ router.post('/match', auth, async (req, res) => {
       return res.status(400).json({ message: 'preferredDate and preferredTimes[] are required' });
     }
 
+    if (!symptoms || symptoms.length === 0) {
+      return res.status(400).json({ message: 'Symptoms are required' });
+    }
+
+    // Predict the disease and get the required specialties
+    const diseasePrediction = await predictDisease(symptoms);
+    const requiredSpecialties = diseasePrediction.doctor_recommendation.specialist.split(',').map(s => s.trim());
+
     // Find all doctors
     const doctors = await Doctor.find().populate('user', 'name email');
     const dateObj = new Date(preferredDate);
@@ -252,10 +261,13 @@ router.post('/match', auth, async (req, res) => {
       bookedMap[docId].push(appt.time);
     });
 
-    // Filter doctors who are available for at least one requested time
+    // Filter doctors who match the specialties and are available for at least one requested time
     const matchedDoctors = doctors.filter(doctor => {
+      if (!requiredSpecialties.includes(doctor.specialization)) return false;
+
       const avail = doctor.availability.find(a => a.day === dayOfWeek);
       if (!avail || !avail.timeSlots || avail.timeSlots.length === 0) return false;
+
       // Find at least one preferred time that is in doctor's available slots and not booked
       return preferredTimes.some(time =>
         avail.timeSlots.includes(time) &&
@@ -263,9 +275,10 @@ router.post('/match', auth, async (req, res) => {
       );
     });
 
-    
-
-    res.json({ doctors: matchedDoctors });
+    res.json({
+      diseasePrediction,
+      doctors: matchedDoctors
+    });
   } catch (error) {
     console.error('Error matching doctors:', error);
     res.status(500).json({ message: 'Server error' });

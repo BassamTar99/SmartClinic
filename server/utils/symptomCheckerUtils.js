@@ -5,7 +5,7 @@ const { PythonShell } = require('python-shell');
 
 // Load the model and label encoder paths
 const modelPath = path.join(__dirname, '../models/symptom_checker_model.pkl');
-const labelEncoderPath = path.join(__dirname, '../models/symptom_checker_label_encoder (1).pkl');
+const labelEncoderPath = path.join(__dirname, '../models/symptom_checker_label_encoder.pkl');
 
 // Predict disease based on symptoms
 async function predictDisease(symptoms) {
@@ -17,7 +17,7 @@ async function predictDisease(symptoms) {
       args: [JSON.stringify(symptoms), modelPath, labelEncoderPath]
     };
 
-    PythonShell.run('predict_disease.py', options, (err, results) => {
+    PythonShell.run('symptom_checker.py', options, (err, results) => {
       if (err) {
         logger.error('Error in Python script:', err);
         return reject(err);
