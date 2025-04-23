@@ -4,6 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from '../context/AuthContext';
+import Select from 'react-select';
 
 export default function SmartSchedulingPage() {
   const { user, isAuthenticated } = useAuth();
@@ -13,12 +14,23 @@ export default function SmartSchedulingPage() {
     location: "",
     symptoms: "",
     preferredDate: "",
-    preferredTime: ""
+    preferredTimes: [] // Now an array
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [matchedDoctors, setMatchedDoctors] = useState([]);
   const [showResults, setShowResults] = useState(false);
+
+  // Time slot options (8 AM to 10 PM)
+  const timeSlotOptions = [
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
+  ].map(ts => ({ value: ts, label: formatTimeDisplay(ts) }));
+
+  function formatTimeDisplay(timeString) {
+    const hour = parseInt(timeString.split(':')[0], 10);
+    return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
+  }
 
   if (!isAuthenticated) {
     return <div>Please log in to schedule appointments</div>;
@@ -28,6 +40,13 @@ export default function SmartSchedulingPage() {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    });
+  };
+
+  const handleTimeChange = (selected) => {
+    setFormData({
+      ...formData,
+      preferredTimes: selected ? selected.map(opt => opt.value) : []
     });
   };
 
@@ -41,7 +60,8 @@ export default function SmartSchedulingPage() {
         '/doctors/match',
         {
           ...formData,
-          patientId: user._id
+          patientId: user._id,
+          preferredTimes: formData.preferredTimes // send as array
         },
         {
           headers: {
@@ -68,7 +88,7 @@ export default function SmartSchedulingPage() {
           patient: user._id,
           doctor: doctorId,
           date: formData.preferredDate,
-          time: formData.preferredTime,
+          time: formData.preferredTimes[0], // Book the first selected time slot
           symptoms: formData.symptoms,
           location: formData.location
         },
@@ -117,14 +137,15 @@ export default function SmartSchedulingPage() {
               </div>
 
               <div>
-                <label className="block font-medium mb-1">Preferred Time</label>
-                <input
-                  type="time"
-                  name="preferredTime"
-                  className="w-full border border-gray-300 rounded p-2"
-                  value={formData.preferredTime}
-                  onChange={handleChange}
-                  required
+                <label className="block font-medium mb-1">Preferred Time(s)</label>
+                <Select
+                  isMulti
+                  options={timeSlotOptions}
+                  value={timeSlotOptions.filter(opt => formData.preferredTimes.includes(opt.value))}
+                  onChange={handleTimeChange}
+                  className="basic-multi-select"
+                  classNamePrefix="select"
+                  placeholder="Select preferred time(s)..."
                 />
               </div>
             </div>

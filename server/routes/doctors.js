@@ -222,6 +222,56 @@ router.get('/:id/availability', auth, async (req, res) => {
   }
 });
 
+// Match doctors based on preferred date, times, and symptoms (location ignored for now)
+router.post('/match', auth, async (req, res) => {
+  try {
+    const { preferredDate, preferredTimes, symptoms } = req.body;
+    if (!preferredDate || !Array.isArray(preferredTimes) || preferredTimes.length === 0) {
+      return res.status(400).json({ message: 'preferredDate and preferredTimes[] are required' });
+    }
+
+    // Find all doctors
+    const doctors = await Doctor.find().populate('user', 'name email');
+    const dateObj = new Date(preferredDate);
+    const dayOfWeek = [
+      'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+    ][dateObj.getDay()];
+    const dateString = dateObj.toISOString().split('T')[0];
+
+    // Find all appointments for the preferred date
+    const appointments = await Appointment.find({
+      date: dateString,
+      status: { $ne: 'cancelled' }
+    });
+
+    // Build a map: { doctorId: [bookedTime, ...] }
+    const bookedMap = {};
+    appointments.forEach(appt => {
+      const docId = appt.doctor.toString();
+      if (!bookedMap[docId]) bookedMap[docId] = [];
+      bookedMap[docId].push(appt.time);
+    });
+
+    // Filter doctors who are available for at least one requested time
+    const matchedDoctors = doctors.filter(doctor => {
+      const avail = doctor.availability.find(a => a.day === dayOfWeek);
+      if (!avail || !avail.timeSlots || avail.timeSlots.length === 0) return false;
+      // Find at least one preferred time that is in doctor's available slots and not booked
+      return preferredTimes.some(time =>
+        avail.timeSlots.includes(time) &&
+        !(bookedMap[doctor._id.toString()] || []).includes(time)
+      );
+    });
+
+    
+
+    res.json({ doctors: matchedDoctors });
+  } catch (error) {
+    console.error('Error matching doctors:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get all doctors
 router.get('/', async (req, res) => {
   try {

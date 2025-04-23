@@ -67,7 +67,11 @@ export default function AuthPage() {
           
           if (loginResult.success) {
             console.log("Post-registration login successful, navigating to dashboard...");
-            navigate("/dashboard", { replace: true });
+            if (formData.role === "doctor") {
+              navigate("/doctor-profile", { replace: true });
+            } else if (formData.role === "patient") {
+              navigate("/patient-profile", { replace: true });
+            }
           } else {
             console.log("Post-registration login failed:", loginResult.error);
             setError(loginResult.error.message || "Registration successful but login failed");
