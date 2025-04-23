@@ -35,7 +35,7 @@ COPY server/models ./models
 
 # Install Python dependencies (you must create server/scripts/requirements.txt)
 COPY server/scripts/requirements.txt ./scripts/requirements.txt
-RUN pip3 install --no-cache-dir -r ./scripts/requirements.txt
+RUN pip install --no-cache-dir -r ./scripts/requirements.txt
 
 # Expose port (change if your server uses a different port)
 EXPOSE 5000
