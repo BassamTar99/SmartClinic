@@ -21,7 +21,7 @@ import PatientProfilePage from './pages/PatientProfilePage';
 import AppointmentDetailsPage from './pages/AppointmentDetailsPage';
 
 // Configure axios
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || '/api';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || '/api/';
 console.log('API base URL:', axios.defaults.baseURL);
 
 // Add axios interceptor for handling auth token
