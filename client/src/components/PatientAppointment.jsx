@@ -65,13 +65,35 @@ export default function PatientAppointment({ appointment, onCancelSuccess }) {
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
       {appointment.status !== 'cancelled' && (
-        <button
-          onClick={handleCancel}
-          disabled={loading}
-          className="mt-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-        >
-          {loading ? 'Cancelling...' : 'Cancel'}
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            {loading ? 'Cancelling...' : 'Cancel'}
+          </button>
+          <button
+            onClick={async () => {
+              if (!window.confirm('Rescheduling will cancel this appointment and take you to book a new one. Continue?')) return;
+              try {
+                setLoading(true);
+                await axios.delete(
+                  `${process.env.REACT_APP_API_URL}/appointments/${appointment._id}`,
+                  { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+                window.location.href = '/reservation';
+              } catch (err) {
+                setError('Failed to reschedule appointment');
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Rescheduling...' : 'Reschedule'}
+          </button>
+        </div>
       )}
     </div>
   );

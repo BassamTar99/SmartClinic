@@ -125,8 +125,17 @@ export default function AppointmentConfirmation() {
               </div>
             )}
           </div>
+
+          {appointment && (
+            <button
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => navigate(`/appointment/${appointment._id}`)}
+            >
+              View Appointment Details
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
-} 
+}
