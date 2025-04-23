@@ -20,7 +20,7 @@ export default function AppointmentConfirmation() {
           return;
         }
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments/${appointmentId}`, {
+        const response = await axios.get(`/appointments/${appointmentId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

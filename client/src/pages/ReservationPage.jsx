@@ -72,7 +72,7 @@ export default function ReservationPage() {
     const fetchDoctors = async () => {
       try {
         setDoctorsLoading(true);
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/doctors`, {
+        const response = await axios.get('/doctors', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -109,7 +109,7 @@ export default function ReservationPage() {
           const bookedSlots = {};
           for (const doctorId of selectedDoctors) {
             const response = await axios.get(
-              `${process.env.REACT_APP_API_URL}/doctors/${doctorId}/availability`,
+              `/doctors/${doctorId}/availability`,
               {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -190,7 +190,7 @@ export default function ReservationPage() {
           // Fetch available times for each doctor separately
           for (const doctorId of selectedDoctors) {
             const response = await axios.get(
-              `${process.env.REACT_APP_API_URL}/appointments/available-times`, 
+              '/appointments/available-times', 
               {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -296,7 +296,7 @@ export default function ReservationPage() {
       // Create a proper date object for the selected date
       const appointmentDate = new Date(viewYear, viewMonth, selectedDate);
 
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/appointments`, {
+      const response = await axios.post('/appointments', {
         date: appointmentDate.toISOString(),
         time: selectedTime, // Already in HH:MM 24-hour format
         symptoms: showSymptomsBox ? description : "", // Only include symptoms if box was shown and filled

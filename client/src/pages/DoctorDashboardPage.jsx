@@ -23,12 +23,12 @@ export default function DoctorDashboardPage() {
         }
 
         // Fetch the doctor's profile to get the Doctor collection _id
-        const profileRes = await axios.get(`${process.env.REACT_APP_API_URL}/doctors/profile`, {
+        const profileRes = await axios.get('/doctors/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const doctorProfileId = profileRes.data._id;
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments`, {
+        const response = await axios.get('/appointments', {
           headers: {
             Authorization: `Bearer ${token}`
           },

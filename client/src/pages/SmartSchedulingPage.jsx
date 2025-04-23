@@ -38,7 +38,7 @@ export default function SmartSchedulingPage() {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/doctors/match`,
+        '/doctors/match',
         {
           ...formData,
           patientId: user._id
@@ -63,7 +63,7 @@ export default function SmartSchedulingPage() {
   const handleBookAppointment = async (doctorId) => {
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/appointments`,
+        '/appointments',
         {
           patient: user._id,
           doctor: doctorId,

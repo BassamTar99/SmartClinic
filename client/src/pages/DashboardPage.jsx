@@ -25,7 +25,7 @@ export default function DashboardPage() {
           return;
         }
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/appointments`, {
+        const response = await axios.get('/appointments', {
           headers: {
             Authorization: `Bearer ${token}`
           },

@@ -45,7 +45,7 @@ export default function DoctorSchedulePage() {
         }
 
         // Fetch doctor details including availability
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/doctors/profile`, {
+        const response = await axios.get('/doctors/profile', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -137,7 +137,7 @@ export default function DoctorSchedulePage() {
         }));
 
       // Send the updated availability to the server
-      await axios.put(`${process.env.REACT_APP_API_URL}/doctors/availability`, {
+      await axios.put('/doctors/availability', {
         availability
       });
 

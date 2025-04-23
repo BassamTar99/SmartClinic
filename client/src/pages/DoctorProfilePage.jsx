@@ -42,7 +42,7 @@ export default function DoctorProfilePage() {
         
         try {
           const response = await axios.get(
-            `${process.env.REACT_APP_API_URL}/doctors/profile`,
+            '/doctors/profile',
             {
               headers: {
                 Authorization: `Bearer ${token}`
@@ -110,7 +110,7 @@ export default function DoctorProfilePage() {
       setLoading(true);
       const token = localStorage.getItem('token');
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/doctors/profile`,
+        '/doctors/profile',
         profile,
         {
           headers: {

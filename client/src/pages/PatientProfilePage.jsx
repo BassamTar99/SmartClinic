@@ -62,7 +62,7 @@ export default function PatientProfilePage() {
       console.log('PatientProfilePage - Submitting profile update:', profile);
       const token = localStorage.getItem('token');
       await axios.put(
-        `${process.env.REACT_APP_API_URL}/auth/profile`,
+        '/auth/profile',
         profile,
         {
           headers: {

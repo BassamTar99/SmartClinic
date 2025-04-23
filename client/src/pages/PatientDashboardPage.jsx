@@ -20,7 +20,7 @@ export default function PatientDashboardPage() {
     const fetchAppointments = async () => {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/appointments/patient/${user._id}`,
+          `/appointments/patient/${user._id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

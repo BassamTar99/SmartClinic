@@ -52,7 +52,7 @@ export default function AuthPage() {
       } else {
         // Handle sign up
         console.log("Attempting registration...");
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, {
+        const response = await axios.post('/auth/register', {
           email: formData.email,
           password: formData.password,
           name: formData.name,

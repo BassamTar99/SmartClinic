@@ -41,7 +41,7 @@ export default function ReminderTimelinePage() {
     try {
       // Mark notification as read
       await axios.patch(
-        `${process.env.REACT_APP_API_URL}/notifications/${notificationId}/read`,
+        `/notifications/${notificationId}/read`,
         {},
         {
           headers: {

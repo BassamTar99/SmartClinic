@@ -33,7 +33,7 @@ export default function PatientAppointment({ appointment, onCancelSuccess }) {
     try {
       setLoading(true);
       await axios.delete(
-        `${process.env.REACT_APP_API_URL}/appointments/${appointment._id}`,
+        `/appointments/${appointment._id}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       onCancelSuccess();
@@ -79,7 +79,7 @@ export default function PatientAppointment({ appointment, onCancelSuccess }) {
               try {
                 setLoading(true);
                 await axios.delete(
-                  `${process.env.REACT_APP_API_URL}/appointments/${appointment._id}`,
+                  `/appointments/${appointment._id}`,
                   { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
                 );
                 window.location.href = '/reservation';
